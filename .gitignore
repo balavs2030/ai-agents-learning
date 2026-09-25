@@ -1,5 +1,6 @@
 .env
 venv/
+venv_crewai/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
