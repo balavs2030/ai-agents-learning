@@ -3,7 +3,6 @@ import os
 import asyncio
 from typing import TypedDict, List
 from dotenv import load_dotenv
-import chromadb
 import gradio as gr
 from langchain_anthropic import ChatAnthropic
 from langchain_core.tools import tool
