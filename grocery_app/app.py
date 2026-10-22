@@ -21,14 +21,8 @@ llm = ChatAnthropic(model="claude-sonnet-4-6", temperature=0.3)
 search_tool = TavilySearch(max_results=3, topic="general")
 
 # ─────────────────────────────────────────
-# ChromaDB Setup
+# Simple in-memory grocery search (no ChromaDB)
 # ─────────────────────────────────────────
-chroma_client = chromadb.EphemeralClient()
-inventory_collection = chroma_client.get_or_create_collection(
-    name="grocery_inventory",
-    metadata={"hnsw:space": "cosine"}
-)
-
 grocery_items = [
     "chicken breast - protein, lean meat, 165 calories per 100g",
     "salmon fillet - protein, omega-3, healthy fats, 208 calories per 100g",
@@ -47,23 +41,28 @@ grocery_items = [
     "quinoa - complete protein, gluten free, fiber, 120 calories per 100g",
     "brown rice - complex carbs, fiber, gluten free, 216 calories per 100g",
     "oats rolled - fiber, beta glucan, heart healthy, 389 calories per 100g",
-    "whole wheat bread - fiber, complex carbs, 247 calories per 100g",
     "blueberries - antioxidants, vitamin C, low sugar, 57 calories per 100g",
     "banana - potassium, energy, natural sugar, 89 calories per 100g",
-    "apple - fiber, vitamin C, antioxidants, 52 calories per 100g",
-    "lemon - vitamin C, detox, low calorie, 29 calories per 100g",
-    "olive oil - healthy fats, anti-inflammatory, 884 calories per 100g",
     "almonds - healthy fats, protein, vitamin E, 579 calories per 100g",
     "chia seeds - omega-3, fiber, plant protein, 486 calories per 100g",
     "almond milk - low calorie, vegan, calcium fortified, 17 calories per 100g",
-    "coconut milk - healthy fats, vegan, creamy, 230 calories per 100g",
+    "olive oil - healthy fats, anti-inflammatory, 884 calories per 100g",
 ]
 
-if inventory_collection.count() == 0:
-    inventory_collection.add(
-        documents=grocery_items,
-        ids=[f"item_{i}" for i in range(len(grocery_items))]
-    )
+def search_grocery_inventory_simple(query: str) -> str:
+    """Simple keyword search through grocery items."""
+    query_words = query.lower().split()
+    matches = []
+    for item in grocery_items:
+        item_lower = item.lower()
+        score = sum(1 for word in query_words if word in item_lower)
+        if score > 0:
+            matches.append((score, item))
+    matches.sort(reverse=True)
+    top_matches = [item for _, item in matches[:5]]
+    if not top_matches:
+        top_matches = grocery_items[:5]
+    return f"Found {len(top_matches)} matching items:\n" + "\n".join([f"- {item}" for item in top_matches])
 
 # ─────────────────────────────────────────
 # Agent State
@@ -85,12 +84,7 @@ class AgentState(TypedDict):
 @tool
 def search_grocery_inventory(query: str) -> str:
     """Search the grocery store inventory for items matching dietary needs."""
-    try:
-        results = inventory_collection.query(query_texts=[query], n_results=5)
-        items = results["documents"][0]
-        return f"Found {len(items)} matching items:\n" + "\n".join([f"- {item}" for item in items])
-    except Exception as e:
-        return f"Error: {str(e)}"
+    return search_grocery_inventory_simple(query)
 
 # ─────────────────────────────────────────
 # Agent Nodes

@@ -3,6 +3,5 @@ langchain-anthropic
 langchain-core
 langgraph
 langchain-tavily
-chromadb
 gradio
 python-dotenv
